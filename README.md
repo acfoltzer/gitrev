@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/acfoltzer/gitrev.svg?branch=master)](https://travis-ci.org/acfoltzer/gitrev)
+
 Some handy Template Haskell splices for including the current git hash
 and branch in the code of your project. Useful for including in panic
 messages, `--version` output, or diagnostic info for more informative
