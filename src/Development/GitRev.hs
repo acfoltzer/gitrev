@@ -101,5 +101,5 @@ gitDirty :: ExpQ
 gitDirty = do
   output <- runGit ["status", "--porcelain"] ""
   case output of
-    "" -> conE $ mkName "Prelude.False"
-    _  -> conE $ mkName "Prelude.True"
+    "" -> conE falseName
+    _  -> conE trueName
