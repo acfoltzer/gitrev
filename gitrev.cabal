@@ -15,7 +15,7 @@ source-repository head
   location: https://github.com/acfoltzer/gitrev.git
 
 library
-  build-depends:       base >= 4.7,
+  build-depends:       base >= 4.6,
                        directory,
                        filepath,
                        template-haskell,
