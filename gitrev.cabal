@@ -1,5 +1,5 @@
 name:                gitrev
-version:             1.0.0
+version:             1.1.0
 synopsis:            Compile git revision info into Haskell projects
 homepage:            https://github.com/acfoltzer/gitrev
 license:             BSD3
@@ -9,13 +9,14 @@ maintainer:          acfoltzer@galois.com
 category:            Development
 build-type:          Simple
 cabal-version:       >=1.10
+description:         Some handy Template Haskell splices for including the current git hash and branch in the code of your project. Useful for including in panic messages, @--version@ output, or diagnostic info for more informative bug reports.
 
 source-repository head
   type:     git
   location: https://github.com/acfoltzer/gitrev.git
 
 library
-  build-depends:       base >= 4.7,
+  build-depends:       base >= 4.7 && < 5,
                        directory,
                        filepath,
                        template-haskell,
