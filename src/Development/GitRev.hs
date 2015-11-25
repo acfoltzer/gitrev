@@ -44,8 +44,8 @@ import System.Process
 -- | Run git with the given arguments and no stdin, returning the
 -- stdout output. If git isn't available or something goes wrong,
 -- return the second argument.
-runGit :: [String] -> String -> Q String
-runGit args def = do
+runGit :: [String] -> String -> IndexUsed -> Q String
+runGit args def useIdx = do
   let oops :: SomeException -> IO (ExitCode, String, String)
       oops _e = return (ExitFailure 1, def, "")
   gitFound <- runIO $ isJust <$> findExecutable "git"
@@ -71,7 +71,7 @@ runGit args def = do
           _hash -> addDependentFile hd
       -- add the index if it exists to set the dirty flag
       indexExists <- runIO $ doesFileExist index
-      when indexExists $ addDependentFile index
+      when (indexExists && useIdx == IdxUsed) $ addDependentFile index
       -- if the refs have been packed, the info we're looking for
       -- might be in that file rather than the one-file-per-ref case
       -- handled above
@@ -84,24 +84,29 @@ runGit args def = do
           ExitFailure _ -> return def
     else return def
 
+-- | Type to flag if the git index is used or not in a call to runGit
+data IndexUsed = IdxUsed -- ^ The git index is used
+               | IdxNotUsed -- ^ The git index is /not/ used
+    deriving (Eq)
+
 -- | Return the hash of the current git commit, or @UNKNOWN@ if not in
 -- a git repository
 gitHash :: ExpQ
 gitHash =
-  stringE =<< runGit ["rev-parse", "HEAD"] "UNKNOWN"
+  stringE =<< runGit ["rev-parse", "HEAD"] "UNKNOWN" IdxNotUsed
 
 -- | Return the branch (or tag) name of the current git commit, or @UNKNOWN@
 -- if not in a git repository. For detached heads, this will just be
 -- "HEAD"
 gitBranch :: ExpQ
 gitBranch =
-  stringE =<< runGit ["rev-parse", "--abbrev-ref", "HEAD"] "UNKNOWN"
+  stringE =<< runGit ["rev-parse", "--abbrev-ref", "HEAD"] "UNKNOWN" IdxNotUsed
 
 -- | Return @True@ if there are non-committed files present in the
 -- repository
 gitDirty :: ExpQ
 gitDirty = do
-  output <- runGit ["status", "--porcelain"] ""
+  output <- runGit ["status", "--porcelain"] "" IdxUsed
   case output of
     "" -> conE $ mkName "Prelude.False"
     _  -> conE $ mkName "Prelude.True"
@@ -109,4 +114,4 @@ gitDirty = do
 -- | Return the number of commits in the current head
 gitCommitCount :: ExpQ
 gitCommitCount =
-  stringE =<< runGit ["rev-list", "HEAD", "--count"] "UNKNOWN"
+  stringE =<< runGit ["rev-list", "HEAD", "--count"] "UNKNOWN" IdxNotUsed
