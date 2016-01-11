@@ -1,5 +1,7 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Example where
+import Prelude (String, concat, error, otherwise)
 import Development.GitRev
 
 panic :: String -> a
