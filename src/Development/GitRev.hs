@@ -18,6 +18,7 @@
 -- > panic msg = error panicMsg
 -- >   where panicMsg =
 -- >           concat [ "[panic ", $(gitBranch), "@", $(gitHash)
+-- >                  , " (", $(gitCommitDate), ")"
 -- >                  , " (", $(gitCommitCount), " commits in HEAD)"
 -- >                  , dirty, "] ", msg ]
 -- >         dirty | $(gitDirty) = " (uncommitted files present)"
@@ -26,7 +27,7 @@
 -- > main = panic "oh no!"
 --
 -- > % cabal exec runhaskell Example.hs
--- > Example.hs: [panic master@2702e69355c978805064543489c351b61ac6760b (6 commits in HEAD) (uncommitted files present)] oh no!
+-- > Example.hs: [panic master@2ae047ba5e4a6f0f3e705a43615363ac006099c1 (Mon Jan 11 11:50:59 2016 -0800) (14 commits in HEAD) (uncommitted files present)] oh no!
 
 module Development.GitRev (gitHash, gitBranch, gitDirty, gitCommitCount, gitCommitDate) where
 
