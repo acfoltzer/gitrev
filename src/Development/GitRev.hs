@@ -28,7 +28,7 @@
 -- > % cabal exec runhaskell Example.hs
 -- > Example.hs: [panic master@2702e69355c978805064543489c351b61ac6760b (6 commits in HEAD) (uncommitted files present)] oh no!
 
-module Development.GitRev (gitHash, gitBranch, gitDirty, gitCommitCount) where
+module Development.GitRev (gitHash, gitBranch, gitDirty, gitCommitCount, gitCommitDate) where
 
 import Control.Applicative
 import Control.Exception
@@ -110,3 +110,8 @@ gitDirty = do
 gitCommitCount :: ExpQ
 gitCommitCount =
   stringE =<< runGit ["rev-list", "HEAD", "--count"] "UNKNOWN"
+
+-- | Return the commit date of the current head
+gitCommitDate :: ExpQ
+gitCommitDate =
+  stringE =<< runGit ["log", "HEAD", "-1", "--format=%cd"] "UNKNOWN"

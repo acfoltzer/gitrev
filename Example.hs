@@ -6,6 +6,7 @@ panic :: String -> a
 panic msg = error panicMsg
   where panicMsg =
           concat [ "[panic ", $(gitBranch), "@", $(gitHash)
+                 , " (", $(gitCommitDate), ")"
                  , " (", $(gitCommitCount), " commits in HEAD)"
                  , dirty, "] ", msg ]
         dirty | $(gitDirty) = " (uncommitted files present)"
