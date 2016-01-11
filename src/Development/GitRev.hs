@@ -108,8 +108,8 @@ gitDirty :: ExpQ
 gitDirty = do
   output <- runGit ["status", "--porcelain"] "" IdxUsed
   case output of
-    "" -> conE $ mkName "Prelude.False"
-    _  -> conE $ mkName "Prelude.True"
+    "" -> conE falseName
+    _  -> conE trueName
 
 -- | Return the number of commits in the current head
 gitCommitCount :: ExpQ
