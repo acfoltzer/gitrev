@@ -120,4 +120,4 @@ gitCommitCount =
 -- | Return the commit date of the current head
 gitCommitDate :: ExpQ
 gitCommitDate =
-  stringE =<< runGit ["log", "HEAD", "-1", "--format=%cd"] "UNKNOWN"
+  stringE =<< runGit ["log", "HEAD", "-1", "--format=%cd"] "UNKNOWN" IdxNotUsed
