@@ -29,7 +29,14 @@
 -- > % cabal exec runhaskell Example.hs
 -- > Example.hs: [panic master@2ae047ba5e4a6f0f3e705a43615363ac006099c1 (Mon Jan 11 11:50:59 2016 -0800) (14 commits in HEAD) (uncommitted files present)] oh no!
 
-module Development.GitRev (gitHash, gitBranch, gitDirty, gitCommitCount, gitCommitDate) where
+module Development.GitRev
+  ( gitBranch
+  , gitCommitCount
+  , gitCommitDate
+  , gitDescribe
+  , gitDirty
+  , gitHash
+  ) where
 
 import Control.Applicative
 import Control.Exception
@@ -102,6 +109,12 @@ gitHash =
 gitBranch :: ExpQ
 gitBranch =
   stringE =<< runGit ["rev-parse", "--abbrev-ref", "HEAD"] "UNKNOWN" IdxNotUsed
+
+-- | Return the long git description for the current git commit, or @UNKNOWN@
+--   it not in a git repository.
+gitDescribe :: ExpQ
+gitDescribe =
+  stringE =<< runGit ["describe", "--long", "--always"] "UNKNOWN" IdxNotUsed
 
 -- | Return @True@ if there are non-committed files present in the
 -- repository
