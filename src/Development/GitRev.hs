@@ -17,12 +17,12 @@
 -- > panic :: String -> a
 -- > panic msg = error panicMsg
 -- >   where panicMsg =
--- >           concat [ "[panic ", $(gitBranch), "@", $(gitHash)
--- >                  , " (", $(gitCommitDate), ")"
--- >                  , " (", $(gitCommitCount), " commits in HEAD)"
+-- >           concat [ "[panic ", $$(gitBranch), "@", $$(gitHash)
+-- >                  , " (", $$(gitCommitDate), ")"
+-- >                  , " (", $$(gitCommitCount), " commits in HEAD)"
 -- >                  , dirty, "] ", msg ]
--- >         dirty | $(gitDirty) = " (uncommitted files present)"
--- >               | otherwise   = ""
+-- >         dirty | $$(gitDirty) = " (uncommitted files present)"
+-- >               | otherwise    = ""
 -- >
 -- > main = panic "oh no!"
 --
@@ -92,32 +92,39 @@ data IndexUsed = IdxUsed -- ^ The git index is used
 
 -- | Return the hash of the current git commit, or @UNKNOWN@ if not in
 -- a git repository
-gitHash :: ExpQ
+gitHash :: Q (TExp String)
 gitHash =
-  stringE =<< runGit ["rev-parse", "HEAD"] "UNKNOWN" IdxNotUsed
+  stringT =<< runGit ["rev-parse", "HEAD"] "UNKNOWN" IdxNotUsed
 
 -- | Return the branch (or tag) name of the current git commit, or @UNKNOWN@
 -- if not in a git repository. For detached heads, this will just be
 -- "HEAD"
-gitBranch :: ExpQ
+gitBranch :: Q (TExp String)
 gitBranch =
-  stringE =<< runGit ["rev-parse", "--abbrev-ref", "HEAD"] "UNKNOWN" IdxNotUsed
+  stringT =<< runGit ["rev-parse", "--abbrev-ref", "HEAD"] "UNKNOWN" IdxNotUsed
 
 -- | Return @True@ if there are non-committed files present in the
 -- repository
-gitDirty :: ExpQ
+gitDirty :: Q (TExp Bool)
 gitDirty = do
   output <- runGit ["status", "--porcelain"] "" IdxUsed
   case output of
-    "" -> conE falseName
-    _  -> conE trueName
+    "" -> boolT False
+    _  -> boolT True
 
 -- | Return the number of commits in the current head
-gitCommitCount :: ExpQ
+gitCommitCount :: Q (TExp String)
 gitCommitCount =
-  stringE =<< runGit ["rev-list", "HEAD", "--count"] "UNKNOWN" IdxNotUsed
+  stringT =<< runGit ["rev-list", "HEAD", "--count"] "UNKNOWN" IdxNotUsed
 
 -- | Return the commit date of the current head
-gitCommitDate :: ExpQ
+gitCommitDate :: Q (TExp String)
 gitCommitDate =
-  stringE =<< runGit ["log", "HEAD", "-1", "--format=%cd"] "UNKNOWN" IdxNotUsed
+  stringT =<< runGit ["log", "HEAD", "-1", "--format=%cd"] "UNKNOWN" IdxNotUsed
+
+stringT :: String -> Q (TExp String)
+stringT s = TExp <$> stringE s
+
+boolT :: Bool -> Q (TExp Bool)
+boolT False = TExp <$> conE falseName
+boolT True  = TExp <$> conE trueName

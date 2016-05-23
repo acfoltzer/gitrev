@@ -19,7 +19,7 @@ library
   build-depends:       base >= 4.6 && < 5,
                        directory,
                        filepath,
-                       template-haskell,
+                       template-haskell >= 2.9 && < 3,
                        process
   hs-source-dirs:      src
   default-language:    Haskell2010
