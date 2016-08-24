@@ -53,7 +53,7 @@ runGit args def useIdx = do
   if gitFound
     then do
       -- a lot of bookkeeping to record the right dependencies
-      pwd <- runIO getCurrentDirectory
+      pwd <- runIO getGitRoot
       let hd         = pwd </> ".git" </> "HEAD"
           index      = pwd </> ".git" </> "index"
           packedRefs = pwd </> ".git" </> "packed-refs"
@@ -84,6 +84,20 @@ runGit args def useIdx = do
           ExitSuccess   -> return (takeWhile (/= '\n') out)
           ExitFailure _ -> return def
     else return def
+
+-- | Get the root directory of the Git repo
+getGitRoot :: IO FilePath
+getGitRoot = do
+    (code, out, err) <- readProcessWithExitCode "git" args ""
+    case code of
+        ExitSuccess   -> return $ takeWhile (/= '\n') out
+        ExitFailure _ -> error $ "git rev-parse --show-toplevel failed: " ++
+                                 err
+  where
+    args =
+        [ "rev-parse"
+        , "--show-toplevel"
+        ]
 
 -- | Type to flag if the git index is used or not in a call to runGit
 data IndexUsed = IdxUsed -- ^ The git index is used
