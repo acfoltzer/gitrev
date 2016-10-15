@@ -29,7 +29,7 @@
 -- > % cabal exec runhaskell Example.hs
 -- > Example.hs: [panic master@2ae047ba5e4a6f0f3e705a43615363ac006099c1 (Mon Jan 11 11:50:59 2016 -0800) (14 commits in HEAD) (uncommitted files present)] oh no!
 
-module Development.GitRev (gitHash, gitBranch, gitDirty, gitCommitCount, gitCommitDate) where
+module Development.GitRev (gitHash, gitBranch, gitDirty, gitDirtyTracked, gitCommitCount, gitCommitDate) where
 
 import Control.Applicative
 import Control.Exception
@@ -108,6 +108,15 @@ gitBranch =
 gitDirty :: ExpQ
 gitDirty = do
   output <- runGit ["status", "--porcelain"] "" IdxUsed
+  case output of
+    "" -> conE falseName
+    _  -> conE trueName
+
+-- | Return @True@ if there are non-commited changes to tracked files
+-- present in the repository
+gitDirtyTracked :: ExpQ
+gitDirtyTracked = do
+  output <- runGit ["status", "--porcelain","--untracked-files=no"] "" IdxUsed
   case output of
     "" -> conE falseName
     _  -> conE trueName
