@@ -66,7 +66,7 @@ runGit args def useIdx = do
   if gitFound
     then do
       -- a lot of bookkeeping to record the right dependencies
-      pwd <- runIO getGitDirectory
+      pwd <- runIO getDotGit
       let hd         = pwd </> ".git" </> "HEAD"
           index      = pwd </> ".git" </> "index"
           packedRefs = pwd </> ".git" </> "packed-refs"
@@ -121,7 +121,7 @@ getDotGit = do
 getGitRoot :: IO FilePath
 getGitRoot = do
   pwd <- getCurrentDirectory
-  (code, out, err) <-
+  (code, out, _) <-
     readProcessWithExitCode "git" ["rev-parse", "--show-toplevel"] ""
   case code of
     ExitSuccess   -> return $ takeWhile (/= '\n') out
