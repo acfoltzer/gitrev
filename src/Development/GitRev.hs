@@ -89,11 +89,11 @@ runGit args def useIdx = do
           ExitFailure _ -> return def
     else return def
 
--- | Determine where our git directory is, in case we're in a
+-- | Determine where our @.git@ directory is, in case we're in a
 -- submodule.
-getGitDirectory :: IO FilePath
-getGitDirectory = do
-  pwd <- getCurrentDirectory
+getDotGit :: IO FilePath
+getDotGit = do
+  pwd <- getGitRoot
   let dotGit = pwd </> ".git"
       oops = return dotGit -- it's gonna fail, that's fine
   isDir <- doesDirectoryExist dotGit
@@ -108,6 +108,16 @@ getGitDirectory = do
                then return relDir
                else oops
            _ -> oops
+
+-- | Get the root directory of the Git repo.
+getGitRoot :: IO FilePath
+getGitRoot = do
+  pwd <- getCurrentDirectory
+  (code, out, err) <-
+    readProcessWithExitCode "git" ["rev-parse", "--show-toplevel"] ""
+  case code of
+    ExitSuccess   -> return $ takeWhile (/= '\n') out
+    ExitFailure _ -> return pwd -- later steps will fail, that's fine
 
 -- | Type to flag if the git index is used or not in a call to runGit
 data IndexUsed = IdxUsed -- ^ The git index is used
