@@ -1,3 +1,6 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
+
 -- |
 -- Module      :  $Header$
 -- Copyright   :  (c) 2015 Adam C. Foltzer
@@ -31,7 +34,6 @@
 
 module Development.GitRev (gitHash, gitBranch, gitDirty, gitCommitCount, gitCommitDate) where
 
-import Control.Applicative
 import Control.Exception
 import Control.Monad
 import Data.Maybe
@@ -41,6 +43,9 @@ import System.Directory
 import System.Exit
 import System.FilePath
 import System.Process
+
+import Prelude ()
+import Prelude.Compat
 
 -- | Run git with the given arguments and no stdin, returning the
 -- stdout output. If git isn't available or something goes wrong,
@@ -53,7 +58,7 @@ runGit args def useIdx = do
   if gitFound
     then do
       -- a lot of bookkeeping to record the right dependencies
-      pwd <- runIO getCurrentDirectory
+      pwd <- runIO getGitDirectory
       let hd         = pwd </> ".git" </> "HEAD"
           index      = pwd </> ".git" </> "index"
           packedRefs = pwd </> ".git" </> "packed-refs"
@@ -61,8 +66,7 @@ runGit args def useIdx = do
       when hdExists $ do
         -- the HEAD file either contains the hash of a detached head
         -- or a pointer to the file that contains the hash of the head
-        hdRef <- runIO $ readFile hd
-        case splitAt 5 hdRef of
+        splitAt 5 `fmap` runIO (readFile hd) >>= \case
           -- pointer to ref
           ("ref: ", relRef) -> do
             let ref = pwd </> ".git" </> relRef
@@ -84,6 +88,26 @@ runGit args def useIdx = do
           ExitSuccess   -> return (takeWhile (/= '\n') out)
           ExitFailure _ -> return def
     else return def
+
+-- | Determine where our git directory is, in case we're in a
+-- submodule.
+getGitDirectory :: IO FilePath
+getGitDirectory = do
+  pwd <- getCurrentDirectory
+  let dotGit = pwd </> ".git"
+      oops = return dotGit -- it's gonna fail, that's fine
+  isDir <- doesDirectoryExist dotGit
+  isFile <- doesFileExist dotGit
+  if | isDir -> return dotGit
+     | not isFile -> oops
+     | isFile ->
+         splitAt 8 `fmap` readFile dotGit >>= \case
+           ("gitdir: ", relDir) -> do
+             isRelDir <- doesDirectoryExist relDir
+             if isRelDir
+               then return relDir
+               else oops
+           _ -> oops
 
 -- | Type to flag if the git index is used or not in a call to runGit
 data IndexUsed = IdxUsed -- ^ The git index is used
