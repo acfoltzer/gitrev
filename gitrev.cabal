@@ -21,7 +21,7 @@ library
                        base-compat >= 0.6.0,
                        directory,
                        filepath,
-                       template-haskell,
+                       template-haskell >= 2.9 && < 3,
                        process
   hs-source-dirs:      src
   ghc-options:         -Wall
