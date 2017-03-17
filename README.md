@@ -14,6 +14,10 @@ in a location like `.git/refs/heads`
 3. On a branch or tag but in a repository with packed refs: the hash is
 in `.git/packed-refs`
 
+These files are added as dependencies to modules that use `GitRev`, and
+so the module should be rebuilt automatically whenever these files
+change.
+
 These situations all arise under normal development workflows, but
 there might be further scenarios that cause problems. Let me know if
 you run into them!
