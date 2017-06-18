@@ -67,21 +67,22 @@ runGit args def useIdx = do
     then do
       -- a lot of bookkeeping to record the right dependencies
       pwd <- runIO getDotGit
-      let hd         = pwd </> ".git" </> "HEAD"
-          index      = pwd </> ".git" </> "index"
-          packedRefs = pwd </> ".git" </> "packed-refs"
+      let hd         = pwd </> "HEAD"
+          index      = pwd </> "index"
+          packedRefs = pwd </> "packed-refs"
       hdExists  <- runIO $ doesFileExist hd
       when hdExists $ do
+        addDependentFile hd
         -- the HEAD file either contains the hash of a detached head
         -- or a pointer to the file that contains the hash of the head
         splitAt 5 `fmap` runIO (readFile hd) >>= \case
           -- pointer to ref
           ("ref: ", relRef) -> do
-            let ref = pwd </> ".git" </> relRef
+            let ref = pwd </> tillNewLine relRef
             refExists <- runIO $ doesFileExist ref
             when refExists $ addDependentFile ref
           -- detached head
-          _hash -> addDependentFile hd
+          _hash -> return ()
       -- add the index if it exists to set the dirty flag
       indexExists <- runIO $ doesFileExist index
       when (indexExists && useIdx == IdxUsed) $ addDependentFile index
@@ -93,9 +94,12 @@ runGit args def useIdx = do
       runIO $ do
         (code, out, _err) <- readProcessWithExitCode "git" args "" `catch` oops
         case code of
-          ExitSuccess   -> return (takeWhile (/= '\n') out)
+          ExitSuccess   -> return (tillNewLine out)
           ExitFailure _ -> return def
     else return def
+
+tillNewLine :: String -> String
+tillNewLine = takeWhile (\c -> c /= '\n' && c /= '\r')
 
 -- | Determine where our @.git@ directory is, in case we're in a
 -- submodule.
@@ -124,7 +128,7 @@ getGitRoot = do
   (code, out, _) <-
     readProcessWithExitCode "git" ["rev-parse", "--show-toplevel"] ""
   case code of
-    ExitSuccess   -> return $ takeWhile (/= '\n') out
+    ExitSuccess   -> return $ tillNewLine out
     ExitFailure _ -> return pwd -- later steps will fail, that's fine
 
 -- | Type to flag if the git index is used or not in a call to runGit
