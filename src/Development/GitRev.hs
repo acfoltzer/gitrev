@@ -40,6 +40,7 @@ module Development.GitRev
   , gitDirty
   , gitDirtyTracked
   , gitHash
+  , gitHashShort
   ) where
 
 import Control.Exception
@@ -137,6 +138,10 @@ data IndexUsed = IdxUsed -- ^ The git index is used
 gitHash :: ExpQ
 gitHash =
   stringE =<< runGit ["rev-parse", "HEAD"] "UNKNOWN" IdxNotUsed
+
+gitHashShort :: Int -> ExpQ
+gitHashShort len =
+  stringE =<< runGit ["rev-parse", "--short=" ++ show len, "HEAD"] "UNKNOWN" IdxNotUsed
 
 -- | Return the branch (or tag) name of the current git commit, or @UNKNOWN@
 -- if not in a git repository. For detached heads, this will just be
