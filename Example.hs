@@ -7,11 +7,11 @@ import Development.GitRev
 panic :: String -> a
 panic msg = error panicMsg
   where panicMsg =
-          concat [ "[panic ", $(gitBranch), "@", $(gitHash)
-                 , " (", $(gitCommitDate), ")"
-                 , " (", $(gitCommitCount), " commits in HEAD)"
+          concat [ "[panic ", $$(gitBranch), "@", $$(gitHash)
+                 , " (", $$(gitCommitDate), ")"
+                 , " (", $$(gitCommitCount), " commits in HEAD)"
                  , dirty, "] ", msg ]
-        dirty | $(gitDirty) = " (uncommitted files present)"
+        dirty | $$(gitDirty) = " (uncommitted files present)"
               | otherwise   = ""
 
 main = panic "oh no!"

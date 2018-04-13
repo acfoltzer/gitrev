@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- |
 -- Module      :  $Header$
@@ -55,13 +56,27 @@ import System.Process
 import Prelude ()
 import Prelude.Compat
 
+-- * TH Utilities * --
+
+-- | fromMaybe in a typed ExpQ expression.
+fromMaybeQ :: Lift a => a -> Maybe a -> TExpQ a
+fromMaybeQ def Nothing = [|| def ||]
+fromMaybeQ _ (Just a) = [|| a ||]
+
+-- | isJust in a typed ExpQ expression.
+isJustQ :: Maybe a -> TExpQ Bool
+isJustQ Nothing = [|| False ||]
+isJustQ (Just a) = [|| True ||]
+
+-- * Git operations * --
+
 -- | Run git with the given arguments and no stdin, returning the
 -- stdout output. If git isn't available or something goes wrong,
 -- return the second argument.
-runGit :: [String] -> String -> IndexUsed -> Q String
-runGit args def useIdx = do
+runGit :: [String] -> IndexUsed -> Q (Maybe String)
+runGit args useIdx = do
   let oops :: SomeException -> IO (ExitCode, String, String)
-      oops _e = return (ExitFailure 1, def, "")
+      oops _e = return (ExitFailure 1, "", "")
   gitFound <- runIO $ isJust <$> findExecutable "git"
   if gitFound
     then do
@@ -93,9 +108,9 @@ runGit args def useIdx = do
       runIO $ do
         (code, out, _err) <- readProcessWithExitCode "git" args "" `catch` oops
         case code of
-          ExitSuccess   -> return (takeWhile (/= '\n') out)
-          ExitFailure _ -> return def
-    else return def
+          ExitSuccess   -> return $ Just $ takeWhile (/= '\n') out
+          ExitFailure _ -> return Nothing
+    else return Nothing
 
 -- | Determine where our @.git@ directory is, in case we're in a
 -- submodule.
@@ -132,49 +147,45 @@ data IndexUsed = IdxUsed -- ^ The git index is used
                | IdxNotUsed -- ^ The git index is /not/ used
     deriving (Eq)
 
+-- * Exposed Git splices * --
+
 -- | Return the hash of the current git commit, or @UNKNOWN@ if not in
 -- a git repository
-gitHash :: ExpQ
+gitHash :: TExpQ String
 gitHash =
-  stringE =<< runGit ["rev-parse", "HEAD"] "UNKNOWN" IdxNotUsed
+  fromMaybeQ "UNKNOWN" =<< runGit ["rev-parse", "HEAD"] IdxNotUsed
 
 -- | Return the branch (or tag) name of the current git commit, or @UNKNOWN@
 -- if not in a git repository. For detached heads, this will just be
 -- "HEAD"
-gitBranch :: ExpQ
+gitBranch :: TExpQ String
 gitBranch =
-  stringE =<< runGit ["rev-parse", "--abbrev-ref", "HEAD"] "UNKNOWN" IdxNotUsed
+  fromMaybeQ "UNKNOWN" =<< runGit ["rev-parse", "--abbrev-ref", "HEAD"] IdxNotUsed
 
 -- | Return the long git description for the current git commit, or
 -- @UNKNOWN@ if not in a git repository.
-gitDescribe :: ExpQ
+gitDescribe :: TExpQ String
 gitDescribe =
-  stringE =<< runGit ["describe", "--long", "--always"] "UNKNOWN" IdxNotUsed
+  fromMaybeQ "UNKNOWN" =<< runGit ["describe", "--long", "--always"] IdxNotUsed
 
 -- | Return @True@ if there are non-committed files present in the
 -- repository
-gitDirty :: ExpQ
-gitDirty = do
-  output <- runGit ["status", "--porcelain"] "" IdxUsed
-  case output of
-    "" -> conE falseName
-    _  -> conE trueName
+gitDirty :: TExpQ Bool
+gitDirty =
+  isJustQ =<< runGit ["status", "--porcelain"] IdxUsed
 
 -- | Return @True@ if there are non-commited changes to tracked files
 -- present in the repository
-gitDirtyTracked :: ExpQ
-gitDirtyTracked = do
-  output <- runGit ["status", "--porcelain","--untracked-files=no"] "" IdxUsed
-  case output of
-    "" -> conE falseName
-    _  -> conE trueName
+gitDirtyTracked :: TExpQ Bool
+gitDirtyTracked =
+  isJustQ =<< runGit ["status", "--porcelain","--untracked-files=no"] IdxUsed
 
 -- | Return the number of commits in the current head
-gitCommitCount :: ExpQ
+gitCommitCount :: TExpQ String
 gitCommitCount =
-  stringE =<< runGit ["rev-list", "HEAD", "--count"] "UNKNOWN" IdxNotUsed
+  fromMaybeQ "UNKNOWN" =<< runGit ["rev-list", "HEAD", "--count"] IdxNotUsed
 
 -- | Return the commit date of the current head
-gitCommitDate :: ExpQ
+gitCommitDate :: TExpQ String
 gitCommitDate =
-  stringE =<< runGit ["log", "HEAD", "-1", "--format=%cd"] "UNKNOWN" IdxNotUsed
+  fromMaybeQ "UNKNOWN" =<< runGit ["log", "HEAD", "-1", "--format=%cd"] IdxNotUsed
