@@ -37,6 +37,7 @@ module Development.GitRev
   , gitCommitCount
   , gitCommitDate
   , gitDescribe
+  , gitDiff
   , gitDirty
   , gitDirtyTracked
   , gitHash
@@ -59,7 +60,10 @@ import Prelude.Compat
 -- stdout output. If git isn't available or something goes wrong,
 -- return the second argument.
 runGit :: [String] -> String -> IndexUsed -> Q String
-runGit args def useIdx = do
+runGit = runGitPostprocess (takeWhile (/= '\n'))
+
+runGitPostprocess :: (String -> String) -> [String] -> String -> IndexUsed -> Q String
+runGitPostprocess postProcess args def useIdx = do
   let oops :: SomeException -> IO (ExitCode, String, String)
       oops _e = return (ExitFailure 1, def, "")
   gitFound <- runIO $ isJust <$> findExecutable "git"
@@ -93,7 +97,7 @@ runGit args def useIdx = do
       runIO $ do
         (code, out, _err) <- readProcessWithExitCode "git" args "" `catch` oops
         case code of
-          ExitSuccess   -> return (takeWhile (/= '\n') out)
+          ExitSuccess   -> return (postProcess out)
           ExitFailure _ -> return def
     else return def
 
@@ -178,3 +182,8 @@ gitCommitCount =
 gitCommitDate :: ExpQ
 gitCommitDate =
   stringE =<< runGit ["log", "HEAD", "-1", "--format=%cd"] "UNKNOWN" IdxNotUsed
+
+-- | Return the diff of the working copy with HEAD
+gitDiff :: ExpQ
+gitDiff =
+  stringE =<< runGitPostprocess id ["diff", "HEAD"] "UNKNOWN" IdxNotUsed
