@@ -40,6 +40,7 @@ module Development.GitRev
   , gitDirty
   , gitDirtyTracked
   , gitHash
+  , gitTree
   ) where
 
 import Control.Exception
@@ -178,3 +179,8 @@ gitCommitCount =
 gitCommitDate :: ExpQ
 gitCommitDate =
   stringE =<< runGit ["log", "HEAD", "-1", "--format=%cd"] "UNKNOWN" IdxNotUsed
+
+-- | Return the hash of the current tree
+gitTree :: ExpQ
+gitTree =
+  stringE =<< runGit ["show", "HEAD", "--format=%T", "--no-patch"] "UNKNOWN" IdxNotUsed
