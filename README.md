@@ -1,3 +1,8 @@
+# Unmaintained project
+
+This repository is no longer maintained. Please consider forking if 
+further development is required.
+
 [![Build Status](https://travis-ci.org/acfoltzer/gitrev.svg?branch=master)](https://travis-ci.org/acfoltzer/gitrev)
 
 Some handy Template Haskell splices for including the current git hash
